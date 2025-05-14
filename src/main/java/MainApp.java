@@ -22,7 +22,7 @@ public class MainApp {
     public static void initElements() throws IOException {
         // TODO: initialize users, books and ratings
     }
-    public static void testRecommenderSystem() {
+    public static void testRecommenderSystem() throws IOException {
         Scanner in = new Scanner(System.in);
 
         System.out.println("Choose recommender: [p]opularity, pro[f]ile, [u]ser similarity");

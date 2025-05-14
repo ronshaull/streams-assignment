@@ -3,7 +3,9 @@ class Rating<T extends Item> {
     private final int itemId;
     private final double rating; // 1‑5
     public Rating(int userId, int itemId, double rating) {
-        this.userId = userId; this.itemId = itemId; this.rating = rating; }
+        this.userId = userId;
+        this.itemId = itemId;
+        this.rating = rating; }
     public Rating(String line) {
         String[] parts = line.split("\t");
         if (parts.length != 3) {

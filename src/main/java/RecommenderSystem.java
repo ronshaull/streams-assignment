@@ -24,4 +24,18 @@ abstract class RecommenderSystem<T extends Item> {
 
     /** @return top‑10 recommended items for the given user, sorted best‑first. */
     public abstract List<T> recommendTop10(int userId);
+    public double getItemAverageRating(int itemId) {
+        // TODO: implement
+        return ratings.stream()
+                .filter(r->r.getItemId()==itemId)
+                .mapToDouble(Rating::getRating)  //could used average here. takes no args.
+                .reduce(0, Double::sum)/getItemRatingsCount(itemId);
+    }
+    public int getItemRatingsCount(int itemId)   {
+        // TODO: implement
+
+        return Math.toIntExact( ratings.stream()
+                .filter(r->r.getItemId()==itemId)
+                .count());
+    }
 }
