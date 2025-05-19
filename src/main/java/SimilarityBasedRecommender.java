@@ -18,7 +18,6 @@ class SimilarityBasedRecommender<T extends Item> extends RecommenderSystem<T> {
     /** Dot‑product similarity; 0 if <10 shared items. */
     public double getSimilarity(int u1, int u2) {
         // TODO: implement
-        double similarity =
         return 0;
     }
 
@@ -61,5 +60,27 @@ class SimilarityBasedRecommender<T extends Item> extends RecommenderSystem<T> {
                 .mapToDouble(r->r.getRating()-globalBias-getItemBias(r.getItemId()))
                 .average().orElse(0.0);
     }
+
+    //helper for getSimilarity function
+    private Map<String, Double> getBiasFreeRatings(String userId) {
+        Map<String, Double> userRatings = ratings.get(userId); // itemId -> rating
+        double globalBias = getGlobalAverageRating();
+
+        Map<String, Double> biasFreeRatings = new HashMap<>();
+
+        for (Map.Entry<String, Double> entry : userRatings.entrySet()) {
+            String itemId = entry.getKey();
+            double rating = entry.getValue();
+
+            double itemBias = getItemBias(itemId); // itemBias = average(item ratings - global)
+            double userBias = getUserBias(userId); // userBias = average(rating - global - itemBias)
+
+            double biasFree = rating - globalBias - itemBias - userBias;
+            biasFreeRatings.put(itemId, biasFree);
+        }
+
+        return biasFreeRatings;
+    }
+
 }
 
