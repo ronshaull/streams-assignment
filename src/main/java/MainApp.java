@@ -4,14 +4,16 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
 public class MainApp {
     // TODO: change the paths to correspond with the location of the files on the local computer
-    public static final String USERS_PATH = "Users.txt";
-    public static final String BOOKS_PATH = "Books.txt";
-    public static final String RATINGS_PATH = "Ratings.txt";
+    public static final String USERS_PATH = "C:\\Users\\user\\Desktop\\java\\second course\\Assignment 5 - Generics + Streams-20250512\\assignment_5_new\\src\\main\\java\\Users.txt";
+    public static final String BOOKS_PATH = "C:\\Users\\user\\Desktop\\java\\second course\\Assignment 5 - Generics + Streams-20250512\\assignment_5_new\\src\\main\\java\\Books.txt";
+    public static final String RATINGS_PATH = "C:\\Users\\user\\Desktop\\java\\second course\\Assignment 5 - Generics + Streams-20250512\\assignment_5_new\\src\\main\\java\\Ratings.txt";
     public static Map<Integer, User> users;
     public static Map<Integer, Book> books;
     public static List<Rating<Book>> ratings;
@@ -20,8 +22,20 @@ public class MainApp {
         testRecommenderSystem();
     }
     public static void initElements() throws IOException {
-        // TODO: initialize users, books and ratings
+        users = Files.lines(Paths.get(USERS_PATH))
+                .map(User::new)
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        books = Files.lines(Paths.get(BOOKS_PATH))
+                .map(Book::new)
+                .collect(Collectors.toMap(Book::getId, Function.identity()));
+
+
+        ratings =Files.lines(Paths.get(RATINGS_PATH))
+                .map(Rating<Book>::new)
+                .collect(Collectors.toList());
     }
+
     public static void testRecommenderSystem() throws IOException {
         Scanner in = new Scanner(System.in);
 
@@ -61,7 +75,6 @@ public class MainApp {
                     rec.getMatchingProfileUsers(userId).forEach(System.out::println);
                 }
             }
-
 
             case "u" -> {
                 SimilarityBasedRecommender<Book> rec = new SimilarityBasedRecommender<>(users, books, ratings);

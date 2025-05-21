@@ -19,26 +19,22 @@ class PopularityBasedRecommender<T extends Item> extends RecommenderSystem<T> {
     public List<T> recommendTop10(int userId)  {
         // TODO: implement
         // for better readability we define the compare function here.
-        Comparator<T> compareItems=(a,b)->{
-            int result = Double.compare(getItemAverageRating(a.getId()), getItemAverageRating(b.getId()));
-            if (result != 0)
-                return result;
-            result = Integer.compare(getItemRatingsCount(a.getId()), getItemRatingsCount(b.getId()));
-            if (result != 0)
-                return result;
-            if (a.getName().compareTo(b.getName()) > 0) {
-                return 1;
-            } else {
-                return 0;
-            }
+        Comparator<T> compareItems = (a, b) -> {
+            int result = Double.compare(getItemAverageRating(b.getId()), getItemAverageRating(a.getId())); // Descending
+            if (result != 0) return result;
 
+            result = Integer.compare(getItemRatingsCount(b.getId()), getItemRatingsCount(a.getId())); // Descending
+            if (result != 0) return result;
+
+            return a.getName().compareTo(b.getName()); // Ascending
         };
-        List<T> result = items.values().stream()
+
+        return items.values().stream()
                     .filter(r -> {return getItemRatingsCount(r.getId()) > 100 && !isRatedBy(r.getId(), userId);})
                     .sorted(compareItems)
                     .limit(10)
                     .collect(toList());
-            return null;
+
     }
 
     public double getItemAverageRating(int itemId) {

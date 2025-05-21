@@ -16,34 +16,62 @@ class ProfileBasedRecommender<T extends Item> extends RecommenderSystem<T> {
 
     @Override
     public List<T> recommendTop10(int userId) {
-        // TODO: implement
-        //for readability we define the function here for the sort.
-        Comparator<T> compareItems = (a, b) -> {
-            int result = Double.compare(getItemAverageRating(a.getId()), getItemAverageRating(b.getId()));
-            if (result != 0)
-                return result;
-            result = Integer.compare(getItemRatingsCount(a.getId()), getItemRatingsCount(b.getId()));
-            if (result != 0)
-                return result;
-            if (a.getName().compareTo(b.getName()) > 0) {
-                return 1;
-            } else {
-                return 0;
-            }
-
-        };
-        // Here we get the ids of the top 10 items. the function we use gives us the Rating of those items,
-        // making sure to get only Rating not from our user.
-        List<Integer> top10items = getMatchingRatings(getMatchingProfileUsers(userId).stream()
+        // Step 1: Get similar users
+        List<Integer> similarUserIds = getMatchingProfileUsers(userId).stream()
                 .map(User::getId)
-                .collect(toList())).stream()
-                .map(Rating::getItemId).collect(toList());
-        // Here we use them to filter the Item objects from the list.
+                .collect(Collectors.toList());
+
+        // Step 2: Get itemIds that current user has rated
+        Set<Integer> itemsRatedByCurrentUser = ratings.stream()
+                .filter(r -> r.getUserId() == userId)
+                .map(Rating::getItemId)
+                .collect(Collectors.toSet());
+
+        // Step 3: Group ratings from similar users, excluding items current user rated
+        Map<Integer, List<Rating<T>>> ratingsByItem = ratings.stream()
+                .filter(r -> similarUserIds.contains(r.getUserId()))
+                .filter(r -> !itemsRatedByCurrentUser.contains(r.getItemId()))
+                .collect(Collectors.groupingBy(Rating::getItemId));
+
+        // Step 4: Filter items with at least 5 ratings and calculate average
+        Map<Integer, Double> qualifiedItemAverages = ratingsByItem.entrySet().stream()
+                .filter(e -> e.getValue().size() >= 5)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().stream()
+                                .mapToDouble(Rating::getRating)
+                                .average()
+                                .orElse(0.0)
+                ));
+
+        // Step 5: Create a comparator using similar-user ratings and counts
+        Comparator<T> compareItems = (a, b) -> {
+            double avgA = qualifiedItemAverages.getOrDefault(a.getId(), 0.0);
+            double avgB = qualifiedItemAverages.getOrDefault(b.getId(), 0.0);
+            int cmp = Double.compare(avgB, avgA); // Descending average
+            if (cmp != 0) return cmp;
+
+            int countA = ratingsByItem.getOrDefault(a.getId(), List.of()).size();
+            int countB = ratingsByItem.getOrDefault(b.getId(), List.of()).size();
+            cmp = Integer.compare(countB, countA); // Descending count
+            if (cmp != 0) return cmp;
+
+            return a.getName().compareTo(b.getName());
+        };
+
+        // Step 6: Get top 10 item IDs based on avg ratings
+        Set<Integer> topItemIds = qualifiedItemAverages.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Double>comparingByValue(Comparator.reverseOrder()))
+                .limit(10)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        // Step 7: Return top 10 items sorted by local comparator
         return items.values().stream()
-                .filter(i -> {
-                    return top10items.contains(i.getId());
-                })
-                .collect(toList());
+                .filter(i -> topItemIds.contains(i.getId()))
+                .sorted(compareItems)
+                .limit(10)
+                .collect(Collectors.toList());
     }
 
     public List<User> getMatchingProfileUsers(int userId) {
@@ -56,7 +84,7 @@ class ProfileBasedRecommender<T extends Item> extends RecommenderSystem<T> {
         Predicate<User> userPredicate = u -> {
             if (u.getId() == userId)
                 return false; // Exclude current user's ratings
-            if (u.getGender() != curr.getGender())
+            if (!u.getGender().equals(curr.getGender()))
                 return false;
             if (Math.abs(u.getAge() - curr.getAge()) > 5)
                 return false;
@@ -76,6 +104,10 @@ class ProfileBasedRecommender<T extends Item> extends RecommenderSystem<T> {
         };
         return ratings.stream()
                 .filter(ratingPredicate)
-                .collect(toList());
+                .collect(Collectors.groupingBy(Rating::getItemId))
+                .values().stream()
+                .filter(ratingList -> ratingList.size() >= 5)
+                .collect(toList()).stream().flatMap(Collection::stream).collect(toList());
+
     }
 }

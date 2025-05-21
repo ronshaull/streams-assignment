@@ -18,4 +18,8 @@ class Rating<T extends Item> {
     public int getUserId() { return userId; }
     public int getItemId() { return itemId; }
     public double getRating() { return rating; }
+    @Override
+    public String toString() {
+        return "userId: " + userId + ", itemId: " + itemId + ", rating: " + rating;
+    }
 }
